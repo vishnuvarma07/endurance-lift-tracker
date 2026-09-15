@@ -583,6 +583,7 @@ def get_stats(
     ).all()
 
     total_volume = 0
+    
 
     for set in sets:
         total_volume += set.weight * set.reps
@@ -591,6 +592,68 @@ def get_stats(
         "total_workouts": len(workouts),
         "total_sets": len(sets),
         "total_volume": total_volume
+
     }
+
+@app.get("/recent/workouts")
+def get_recent_workouts(
+    db:Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    workouts = (
+        db.query(models.Workouts)
+        .filter(models.Workouts.user_id == current_user.id)
+        .order_by(models.Workouts.date.desc())
+        .limit(5)
+        .all()
+    )
+
+    result = []
+
+    for workout in workouts:
+        day = (
+            db.query(models.SplitDay)
+            .filter(models.SplitDay.id == workout.split_day_id)
+            .first()
+        )
+
+        sets = (
+            db.query(models.Sets)
+            .filter(models.Sets.workout_id == workout.id)
+            .order_by(
+                models.Sets.exercise_id,
+                models.Sets.set_number
+            )
+            .all()
+        )
+
+        exercises = {}
+
+        for set in sets:
+
+            exercise = (
+                db.query(models.Exercise)
+                .filter(set.exercise_id == models.Exercise.id)
+                .first()
+            )
+
+            if set.exercise_id not in exercises:
+                exercises[set.exercise_id] = {
+                    "exercise_id": exercise.id,
+                    "name": exercise.name,
+                    "sets": []
+                }
+
+            exercises[set.exercise_id]["sets"].append({
+                "set_number": set.set_number,
+                "weight": set.weight,
+                "reps": set.reps
+            })
+
+        result.append({
+            "date": workout.date,
+            "day_name": day.name,
+            "exercises": list(exercise.values())
+        })
 
 
