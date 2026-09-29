@@ -40,6 +40,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 password_hasher = PasswordHash.recommended()
 
 def get_db():
