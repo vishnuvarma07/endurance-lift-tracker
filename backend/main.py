@@ -442,13 +442,27 @@ def get_previous_workout(
             "sets": []
         }
 
-    previous_sets = db.query(models.Sets).filter(
-        models.Sets.workout_id == previous_workout.id
-    ).all()
+    # Keep the latest recorded value for each exercise/set, even when a
+    # more recent session skipped that exercise or set.
+    recorded_sets = (
+        db.query(models.Sets)
+        .join(models.Workouts, models.Sets.workout_id == models.Workouts.id)
+        .filter(
+            models.Workouts.user_id == current_user.id,
+            models.Workouts.split_day_id == dayId
+        )
+        .order_by(models.Workouts.date.desc(), models.Workouts.id.desc(), models.Sets.id.desc())
+        .all()
+    )
+    latest_sets = {}
+    for recorded_set in recorded_sets:
+        key = (recorded_set.exercise_id, recorded_set.set_number)
+        if key not in latest_sets:
+            latest_sets[key] = recorded_set
 
     return {
         "previous_workout": previous_workout,
-        "sets": previous_sets
+        "sets": list(latest_sets.values())
     }
 
 @app.delete("/splits/{splitId}/days/{dayId}/exercises/{exerciseId}")

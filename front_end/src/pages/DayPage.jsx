@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import Navbar from "../components/Navbar"
+import { collectCompletedSets } from "../workoutSets";
 import "./DayPage.css"
 const API_URL = import.meta.env.VITE_API_URL;
 function DayPage() {
@@ -144,6 +145,11 @@ function DayPage() {
     };
     const handleFinishWorkout = async () => {
         if (finishingRef.current) return;
+        const completedSets = collectCompletedSets(exercises, setData, setCounts);
+        if (completedSets.length === 0) {
+            alert("Enter a weight and at least one rep for a set before finishing your workout.");
+            return;
+        }
         finishingRef.current = true;
         setIsFinishing(true);
         try {
@@ -166,45 +172,28 @@ function DayPage() {
                 return;
             }
             const workout = await workoutResponse.json();
-            for (const exercise of exercises) {
-                const exerciseSets = setData[exercise.id];
-                if (!exerciseSets) {
-                    continue;
+            const savedSets = [];
+            for (const completedSet of completedSets) {
+                const response = await fetch(`${API_URL}/sets`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ ...completedSet, workout_id: workout.id })
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    alert(errorData.detail || "Could not save set.");
+                    return;
                 }
-                for (const [setNumber, values] of Object.entries(exerciseSets)) {
-                    if (
-                        values.weight === "" ||
-                        values.reps === "" ||
-                        values.weight === undefined ||
-                        values.reps === undefined
-                    ) {
-                        continue;
-                    }
-                    const response = await fetch(
-                        `${API_URL}/sets`,
-                        {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                Authorization: `Bearer ${token}`
-                            },
-                            body: JSON.stringify({
-                                exercise_id: exercise.id,
-                                workout_id: workout.id,
-                                set_number: Number(setNumber),
-                                weight: Number(values.weight),
-                                reps: Number(values.reps)
-                            })
-                        }
-                    );
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        console.log(errorData);
-                        alert(errorData.detail);
-                        return;
-                    }
-                }
+                savedSets.push(await response.json());
             }
+            setPreviousSets(previous => {
+                const updated = new Map(previous.map(set => [`${set.exercise_id}:${set.set_number}`, set]));
+                savedSets.forEach(set => updated.set(`${set.exercise_id}:${set.set_number}`, set));
+                return [...updated.values()];
+            });
             alert("Workout saved!");
             setSetData({});
         } catch (error) {
