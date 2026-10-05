@@ -30,30 +30,21 @@ function RegistrationPage() {
     }
 
     return (
-        <div>
-            <h1>Register</h1>
-            <br />
-            <form onSubmit={handleRegister}>
-                <input
-                    type="text"
-                    placeholder="Username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                />
-                <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-                <button type="submit">Register</button>
-            </form>
-            <br />
-            <button onClick={() => navigate("/")}>
-                Back to login
-            </button>
-        </div>
-    )
+      <main className="auth-layout">
+        <section className="auth-story">
+          <div className="brand"><span className="brand-mark" aria-hidden="true">E</span>ENDURANCE<span className="brand-dot">.</span></div>
+          <div className="auth-story-content"><p className="eyebrow">BUILT FOR THE LONG GAME</p><h1>Small steps.<br />Stronger you<span className="accent-text">.</span></h1><p>Plan your training. Track every rep.<br />See how far you can go.</p><div className="training-art" aria-hidden="true"><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div><span className="art-caption">SHOW UP. PUT IN THE WORK. REPEAT.</span></div>
+          <p className="auth-footer">Your progress, one session at a time.</p>
+        </section>
+        <section className="auth-panel"><div className="auth-card"><p className="eyebrow">LET’S GET TO WORK</p><h2>Build your momentum.</h2><p className="muted">Create your account and make every session count.</p>
+          <form className="auth-form" onSubmit={handleRegister}>
+            <label>Username<input required autoComplete="username" type="text" placeholder="Enter your username" value={username} onChange={(e) => setUsername(e.target.value)} /></label>
+            <label>Password<input required autoComplete="new-password" type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
+            <button type="submit">Create account <span aria-hidden="true">→</span></button>
+          </form>
+          <p className="auth-switch">Already have an account? <button className="text-button" onClick={() => navigate("/")}>Sign in</button></p>
+        </div></section>
+      </main>
+    );
 }
-
 export default RegistrationPage;

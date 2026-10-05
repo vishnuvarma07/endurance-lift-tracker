@@ -1,11 +1,10 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import Navbar from "../components/Navbar"
 import "./DayPage.css"
 const API_URL = import.meta.env.VITE_API_URL;
 function DayPage() {
     const { splitId, dayId } = useParams();
-    const navigate = useNavigate();
     const [exercises, setExercises] = useState([]);
     const [day, setDay] = useState(null);
     const [newExerciseName, setNewExerciseName] = useState("");
@@ -219,16 +218,12 @@ function DayPage() {
     return (
         <div>
             <Navbar />
-            <div className="header">
-                <h1 className="day-header">{day?.name}</h1>
+            <main className="page-content workout-page"><div className="header">
+                <div><p className="eyebrow">WORKOUT SESSION</p><h1 className="day-header">{day?.name || "Your workout"}</h1><p className="muted">Log your sets. Build on your last session.</p></div>
                 <button
                     onClick={handleFinishWorkout}
                     disabled={isFinishing}
                     aria-busy={isFinishing}
-                    style={{
-                        backgroundColor: "green",
-                        color: "white"
-                    }}
                     className="finish-workout-btn-header"
                 >
                     {isFinishing ? "Saving..." : "Finish Workout"}
@@ -250,7 +245,7 @@ function DayPage() {
                                     set.set_number === setNumber
                             );
                             return (
-                                <div key={index}>
+                                <div className="workout-set-row" key={index}>
                                     <span className = "set-txt">
                                         Set {setNumber}
                                     </span>
@@ -261,6 +256,7 @@ function DayPage() {
                                             setData[exercise.id]?.[setNumber]?.weight ?? ""
                                         }
                                         className="weight-input"
+                                        aria-label={`${exercise.name} set ${setNumber} weight`} min="0" step="any"
                                         onChange={(e) =>
                                             handleSetChange(
                                                 exercise.id,
@@ -277,6 +273,7 @@ function DayPage() {
                                             setData[exercise.id]?.[setNumber]?.reps ?? ""
                                         }
                                         className="reps-input"
+                                        aria-label={`${exercise.name} set ${setNumber} reps`} min="0"
                                         onChange={(e) =>
                                             handleSetChange(
                                                 exercise.id,
@@ -306,7 +303,7 @@ function DayPage() {
                                     }));
                                 }}
                             >
-                                {isAddingExercise ? "Adding..." : "Add"}Set
+                                ＋ Add set
                             </button>
                             <button
                                 type="button"
@@ -337,10 +334,6 @@ function DayPage() {
                         onClick={handleFinishWorkout}
                     disabled={isFinishing}
                     aria-busy={isFinishing}
-                        style={{
-                            backgroundColor: "green",
-                            color: "white"
-                        }}
                         className="finish-workout-btn"
                     >
                         {isFinishing ? "Saving..." : "Finish Workout"}
@@ -356,7 +349,7 @@ function DayPage() {
                             onChange={(e) =>
                                 setNewExerciseName(e.target.value)
                             }
-                            placeholder="Exercise Name"
+                            placeholder="Exercise name" required aria-label="Exercise name"
                             className="add-exercise-name"
                         />
                         <input
@@ -366,7 +359,7 @@ function DayPage() {
                             onChange={(e) =>
                                 setTargetSets(Number(e.target.value))
                             }
-                            placeholder="Sets"
+                            placeholder="Sets" required aria-label="Target sets"
                             className="add-exercise-sets"
                         />
                         </div>
@@ -375,7 +368,7 @@ function DayPage() {
                         </button>
                     </form>
                 </div>
-            </div>
+            </div></main>
         </div>
     );
 }

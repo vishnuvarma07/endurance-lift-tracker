@@ -574,7 +574,7 @@ def get_stats(
 
     if not workout_ids:
         return {
-            "total workouts": 0,
+            "total_workouts": 0,
             "total_sets": 0,
             "total_volume":0
         }
@@ -604,7 +604,7 @@ def get_recent_workouts(
     workouts = (
         db.query(models.Workouts)
         .filter(models.Workouts.user_id == current_user.id)
-        .order_by(models.Workouts.date.desc())
+        .order_by(models.Workouts.date.desc(), models.Workouts.id.desc())
         .limit(5)
         .all()
     )
@@ -640,8 +640,8 @@ def get_recent_workouts(
 
             if set.exercise_id not in exercises:
                 exercises[set.exercise_id] = {
-                    "exercise_id": exercise.id,
-                    "name": exercise.name,
+                    "exercise_id": set.exercise_id,
+                    "name": exercise.name if exercise else "Deleted exercise",
                     "sets": []
                 }
 
@@ -652,9 +652,10 @@ def get_recent_workouts(
             })
 
         result.append({
+            "id": workout.id,
             "date": workout.date,
-            "day_name": day.name,
-            "exercises": list(exercise.values())
+            "day_name": day.name if day else "Deleted training day",
+            "exercises": list(exercises.values())
         })
 
-
+    return result
