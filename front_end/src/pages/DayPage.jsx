@@ -150,6 +150,9 @@ function DayPage() {
             alert("Enter a weight and at least one rep for a set before finishing your workout.");
             return;
         }
+        if (!window.confirm("Are you sure you would like to save this workout?")) {
+            return;
+        }
         finishingRef.current = true;
         setIsFinishing(true);
         try {
