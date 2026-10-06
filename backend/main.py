@@ -163,6 +163,57 @@ def get_split(
 
     return split
 
+@app.patch("/splits/{splitId}")
+def rename_split(
+    splitId: int,
+    update: schemas.NameUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    split = db.query(models.Split).filter(
+        models.Split.id == splitId,
+        models.Split.user_id == current_user.id
+    ).first()
+    if not split:
+        raise HTTPException(status_code=404, detail="Split not found")
+    name = update.name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Name cannot be blank")
+    split.name = name
+    db.commit()
+    db.refresh(split)
+    return split
+
+
+@app.patch("/splits/{splitId}/days/{dayId}")
+def rename_split_day(
+    splitId: int,
+    dayId: int,
+    update: schemas.NameUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    split = db.query(models.Split).filter(
+        models.Split.id == splitId,
+        models.Split.user_id == current_user.id
+    ).first()
+    if not split:
+        raise HTTPException(status_code=404, detail="Split not found")
+    day = db.query(models.SplitDay).filter(
+        models.SplitDay.id == dayId,
+        models.SplitDay.split_id == splitId
+    ).first()
+    if not day:
+        raise HTTPException(status_code=404, detail="Day not found")
+    name = update.name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Name cannot be blank")
+    day.name = name
+    db.commit()
+    db.refresh(day)
+    return day
+
+
 @app.get("/splits/{splitId}/days")
 def get_split_days(
     splitId: int,

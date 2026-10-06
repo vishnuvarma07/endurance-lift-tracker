@@ -666,3 +666,14 @@ label input {
 .workout-history-exercises strong { color: #d2d5db; font-weight: 500; }
 .recent-workouts .empty-state button { margin-top: 16px; }
 @media (max-width: 650px) { .recent-workout-heading { align-items: flex-start; flex-direction: column; } .recent-workout-card { padding: 20px; } }
+
+.editable-plan-card { font-weight: 400; }
+.plan-card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; }
+.card-edit-button { background: transparent; color: var(--text); padding: 4px 8px; font-size: 12px; min-height: 32px; }
+.card-edit-button:hover { color: var(--accent); background: var(--accent-bg); }
+.plan-card-link { display: flex; flex-direction: column; flex: 1; width: 100%; color: var(--text); }
+.plan-card-link:hover { color: var(--text-h); }
+.card-rename-form { flex-direction: column; width: 100%; margin-top: 16px; }
+.card-rename-actions { display: flex; gap: 8px; }
+.card-rename-actions button { padding: 8px 14px; font-size: 13px; }
+.card-rename-error { font-size: 12px; color: #ffb0b0; }

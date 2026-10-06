@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class UserCreate(BaseModel):
@@ -38,3 +38,7 @@ class SetCreate(BaseModel):
     set_number: int
     weight: float
     reps: int
+
+class NameUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    name: str

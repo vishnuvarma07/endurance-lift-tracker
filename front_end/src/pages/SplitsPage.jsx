@@ -1,3 +1,4 @@
+import EditablePlanCard from "../components/EditablePlanCard";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./SplitsPage.css";
@@ -62,7 +63,7 @@ function SplitsPage() {
       <header className="page-heading"><div><p className="eyebrow">YOUR TRAINING SPACE</p><h1>Keep showing up<span className="accent-text">.</span></h1><p className="muted">A little structure. A lot of progress. Let’s get to work.</p></div><span className="status-pill">● Ready to train</span></header>
       <section className="dashboard-banner"><div><p className="eyebrow">MAKE EVERY SESSION COUNT</p><h2>Your plan. Your pace.</h2><p>Build a split, choose your day, and track every set.</p></div><button className="secondary-button" onClick={() => navigate("/stats")}>View your progress ↗</button></section>
       <div className="section-heading"><h2>Training splits <span className="count-badge">{splits.length}</span></h2><span className="muted">Your routines, all in one place</span></div>
-      <div className="plan-grid">{splits.map((split, index) => <button className="plan-card" key={split.id} onClick={() => navigate(`/splits/${split.id}`)}><span className="plan-number">PLAN {String(index + 1).padStart(2, "0")}</span><h3>{split.name}</h3><span className="card-bottom">Explore training days <span>↗</span></span></button>)}</div>
+      <div className="plan-grid">{splits.map((split, index) => <EditablePlanCard key={split.id} item={split} number={index + 1} kind="split" href={`/splits/${split.id}`} endpoint={`/splits/${split.id}`} onUpdated={updated => setSplits(previous => previous.map(entry => entry.id === updated.id ? updated : entry))} />)}</div>
       {splits.length === 0 && <div className="empty-state"><span className="empty-icon" aria-hidden="true">＋</span><h3>A fresh start for your training.</h3><p>Create your first split below to build your routine.</p></div>}
       <section className="create-panel"><div><h3>Create a new split</h3><p className="muted">Give your next training plan a name.</p></div><form onSubmit={handleAddSplit}><input aria-label="Split name" required  type="text" value={newSplitName} onChange={(e) => setNewSplitName(e.target.value)} placeholder="e.g. Push / Pull / Legs"/><button type="submit">＋ Add split</button></form></section>
     </main></div>;
