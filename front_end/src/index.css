@@ -750,3 +750,24 @@ h1, h3, .workout-history-exercises h4, .prev-set-txt {
     transform: none;
   }
 }
+
+.workout-header-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.exercise-settings-dialog { width: min(680px, calc(100% - 32px)); max-height: calc(100dvh - 48px); padding: 28px; background: var(--bg-secondary); color: var(--text); border: 1px solid var(--border); border-radius: 16px; overflow-y: auto; }
+.exercise-settings-dialog::backdrop { background: #000a; }
+.exercise-settings-dialog form { flex-direction: column; gap: 20px; }
+.settings-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.settings-heading h2 { margin-top: 8px; }
+.settings-exercise-list { display: grid; gap: 16px; }
+.settings-exercise-row { display: grid; grid-template-columns: minmax(0, 1fr) 80px auto; align-items: end; gap: 12px; border: 1px solid var(--border); border-radius: 10px; margin: 0; padding: 16px; min-width: 0; }
+.settings-exercise-row legend { font-size: 12px; padding-inline: 6px; }
+.settings-exercise-row label { min-width: 0; }
+.settings-order-controls { display: flex; gap: 6px; }
+.settings-order-controls button { padding: 10px 14px; }
+.settings-footer { display: flex; justify-content: flex-end; gap: 12px; }
+@media (max-width: 650px) {
+  .workout-header-actions { width: 100%; }
+  .workout-header-actions > button { width: 100%; }
+  .exercise-settings-dialog { padding: 20px; }
+  .settings-exercise-row { grid-template-columns: minmax(0, 1fr) 72px; }
+  .settings-order-controls { grid-column: 1 / -1; justify-content: flex-end; }
+}

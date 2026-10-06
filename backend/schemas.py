@@ -42,3 +42,13 @@ class SetCreate(BaseModel):
 class NameUpdate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
     name: str
+
+
+class ExerciseSettingsItem(BaseModel):
+    id: int
+    name: str
+    target_sets: int
+
+
+class ExerciseSettingsUpdate(BaseModel):
+    exercises: list[ExerciseSettingsItem]

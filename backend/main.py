@@ -566,6 +566,46 @@ def delete_exercise(
         "message": "Exercise removed successfully"
     }
 
+@app.put("/splits/{splitId}/days/{dayId}/exercise-settings")
+def update_exercise_settings(
+    splitId: int,
+    dayId: int,
+    settings: schemas.ExerciseSettingsUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    split = db.query(models.Split).filter(
+        models.Split.id == splitId, models.Split.user_id == current_user.id
+    ).first()
+    if not split:
+        raise HTTPException(status_code=404, detail="Split not found")
+    day = db.query(models.SplitDay).filter(
+        models.SplitDay.id == dayId, models.SplitDay.split_id == splitId
+    ).first()
+    if not day:
+        raise HTTPException(status_code=404, detail="Day not found")
+    exercises = db.query(models.Exercise).filter(
+        models.Exercise.split_day_id == dayId,
+        models.Exercise.is_active == True
+    ).all()
+    by_id = {exercise.id: exercise for exercise in exercises}
+    ids = [item.id for item in settings.exercises]
+    if len(ids) != len(set(ids)) or set(ids) != set(by_id):
+        raise HTTPException(status_code=409, detail="Exercises changed. Close settings and reload the page before trying again.")
+    for item in settings.exercises:
+        if not item.name.strip() or item.target_sets < 1:
+            raise HTTPException(status_code=422, detail="Each exercise needs a name and at least one set")
+    for order, item in enumerate(settings.exercises, start=1):
+        exercise = by_id[item.id]
+        exercise.name = item.name.strip()
+        exercise.target_sets = item.target_sets
+        exercise.exercise_order = order
+    db.commit()
+    for exercise in exercises:
+        db.refresh(exercise)
+    return sorted(exercises, key=lambda exercise: exercise.exercise_order)
+
+
 @app.put("/splits/{splitId}/days/{dayId}/exercises/{exerciseId}")
 def update_exercise(
     splitId: int,

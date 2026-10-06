@@ -1,3 +1,4 @@
+import ExerciseSettings from "../components/ExerciseSettings";
 import { useParams } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import Navbar from "../components/Navbar"
@@ -7,6 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 function DayPage() {
     const { splitId, dayId } = useParams();
     const [exercises, setExercises] = useState([]);
+    const [settingsOpen, setSettingsOpen] = useState(false);
     const [day, setDay] = useState(null);
     const [newExerciseName, setNewExerciseName] = useState("");
     const [targetSets, setTargetSets] = useState("");
@@ -210,8 +212,16 @@ function DayPage() {
     return (
         <div>
             <Navbar />
+            {settingsOpen && <ExerciseSettings exercises={exercises} splitId={splitId} dayId={dayId}
+                onClose={() => setSettingsOpen(false)} onSaved={updated => {
+                    setExercises(updated);
+                    setSetCounts(Object.fromEntries(updated.map(exercise => [exercise.id, exercise.target_sets])));
+                    setSettingsOpen(false);
+                }} />}
             <main className="page-content workout-page"><div className="header">
                 <div><p className="eyebrow">WORKOUT SESSION</p><h1 className="day-header">{day?.name || "Your workout"}</h1><p className="muted">Log your sets. Build on your last session.</p></div>
+                <div className="workout-header-actions">
+                <button type="button" className="secondary-button" disabled={isFinishing || isAddingExercise || exercises.length === 0} onClick={() => setSettingsOpen(true)}>⚙ Exercise settings</button>
                 <button
                     onClick={handleFinishWorkout}
                     disabled={isFinishing}
@@ -220,7 +230,7 @@ function DayPage() {
                 >
                     {isFinishing ? "Saving..." : "Finish Workout"}
                 </button>
-            </div>
+            </div></div>
             <div className="exercise-scroll-container" ref={scrollContainerRef}>
                 {exercises.map((exercise) => (
                     <div className="exercise-card"key={exercise.id}>
