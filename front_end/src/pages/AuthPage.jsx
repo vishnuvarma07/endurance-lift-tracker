@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -7,36 +7,41 @@ function AuthPage() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
 
+    const [isSigningIn, setIsSigningIn] = useState(false);
+    const signingInRef = useRef(false);
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
 
-        const formData = new URLSearchParams();
-        formData.append("username", username);
-        formData.append("password", password);
+        if (signingInRef.current) return;
+        signingInRef.current = true;
+        setIsSigningIn(true);
+        try {
+            const formData = new URLSearchParams();
+            formData.append("username", username);
+            formData.append("password", password);
 
-        const response = await fetch(`${API_URL}/login`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: formData,
-        });
-
-        if(!response.ok) {
-            alert("Login failed. Please try again.");
-            setUsername("");
-            setPassword("");
-            return;
+            const response = await fetch(`${API_URL}/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: formData,
+            });
+            if (!response.ok) {
+                alert("Login failed. Please try again.");
+                setPassword("");
+                return;
+            }
+            const data = await response.json();
+            localStorage.setItem("token", data.access_token);
+            navigate("/splits");
+        } catch {
+            alert("Could not sign in. Please try again.");
+        } finally {
+            signingInRef.current = false;
+            setIsSigningIn(false);
         }
-
-        const data = await response.json();
-
-        localStorage.setItem("token", data.access_token);
-
-        navigate("/splits");
-    }
+    };
 
     return (
       <main className="auth-layout">
@@ -49,7 +54,7 @@ function AuthPage() {
           <form className="auth-form" onSubmit={handleLogin}>
             <label>Username<input required autoComplete="username" type="text" placeholder="Enter your username" value={username} onChange={(e) => setUsername(e.target.value)} /></label>
             <label>Password<input required autoComplete="current-password" type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
-            <button type="submit">Sign in <span aria-hidden="true">→</span></button>
+            <button type="submit" disabled={isSigningIn} aria-busy={isSigningIn}>{isSigningIn ? "Signing in..." : "Sign in"} <span aria-hidden="true">→</span></button>
           </form>
           <p className="auth-switch">New to Endurance? <button className="text-button" onClick={() => navigate("/register")}>Create an account</button></p>
         </div></section>
