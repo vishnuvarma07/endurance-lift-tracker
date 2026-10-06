@@ -677,3 +677,76 @@ label input {
 .card-rename-actions { display: flex; gap: 8px; }
 .card-rename-actions button { padding: 8px 14px; font-size: 13px; }
 .card-rename-error { font-size: 12px; color: #ffb0b0; }
+
+/* Allow grid and flex content to shrink around long user-entered names. */
+.page-content, .page-heading > div, .header > div,
+.plan-grid > *, .stats-grid > *, .auth-layout > *,
+.workout-history-exercises > *, .add-exercise-inputs {
+  min-width: 0;
+}
+h1, h3, .workout-history-exercises h4, .prev-set-txt {
+  overflow-wrap: anywhere;
+}
+.workout-history-exercises {
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+}
+
+@media (max-width: 650px) {
+  /* 16px inputs prevent automatic focus zoom in iOS without disabling pinch zoom. */
+  input, select, textarea {
+    font-size: 16px;
+  }
+  .page-content {
+    padding-left: max(18px, env(safe-area-inset-left));
+    padding-right: max(18px, env(safe-area-inset-right));
+    padding-bottom: calc(48px + env(safe-area-inset-bottom));
+  }
+  .auth-story, .auth-panel {
+    padding-left: max(24px, env(safe-area-inset-left));
+    padding-right: max(24px, env(safe-area-inset-right));
+  }
+  .auth-story {
+    padding-top: calc(24px + env(safe-area-inset-top));
+  }
+  .auth-panel {
+    padding-bottom: calc(48px + env(safe-area-inset-bottom));
+  }
+  .card-edit-button, .delete-btn, .text-button,
+  .recent-workout-card summary {
+    min-height: 44px;
+  }
+  .recent-workout-card summary {
+    padding-block: 12px;
+  }
+  .exercise-controls, .card-rename-actions {
+    flex-wrap: wrap;
+  }
+  .exercise-controls button, .card-rename-actions button {
+    flex: 1;
+  }
+  .workout-set-row {
+    grid-template-columns: 48px minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .add-exercise-name {
+    flex: 1;
+    width: 0;
+  }
+  .add-exercise-sets {
+    flex: 0 0 80px;
+    width: 80px;
+  }
+  .workout-history-exercises li {
+    flex-wrap: wrap;
+    gap: 4px 16px;
+  }
+  .dashboard-banner .secondary-button {
+    white-space: normal;
+    width: 100%;
+  }
+}
+
+@media (hover: none) {
+  .plan-card:hover {
+    transform: none;
+  }
+}
