@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
+import VolumeTrend from "../components/VolumeTrend";
 import Navbar from "../components/Navbar";
 
 const API_URL = import.meta.env.VITE_API_URL
 
 function StatisticsPage(){
-    const [stats, setStats] = useState(null);
+    const [trendData, setTrendData] = useState(null);
 
     const [recentWorkouts, setRecentWorkouts] = useState([]);
     const [loadingRecent, setLoadingRecent] = useState(true);
     const [recentError, setRecentError] = useState("");
-    const [statsError, setStatsError] = useState("");
+    const [trendError, setTrendError] = useState("");
     const [reload, setReload] = useState(0);
 
     useEffect(() => {
@@ -27,7 +28,7 @@ function StatisticsPage(){
                 if (!controller.signal.aborted) onComplete();
             }
         };
-        load("/stats", setStats, () => setStatsError("Could not load your totals."));
+        load("/stats/volume-trends", setTrendData, () => setTrendError("Could not load volume trends. Please try again."));
         load("/recent/workouts", setRecentWorkouts,
             () => setRecentError("Could not load recent workouts. Please try again."),
             () => setLoadingRecent(false));
@@ -35,12 +36,11 @@ function StatisticsPage(){
     }, [reload]);
 
     return <div><Navbar/><main className="page-content"><header className="page-heading"><div><p className="eyebrow">THE BIGGER PICTURE</p><h1>See your effort add up<span className="accent-text">.</span></h1><p className="muted">Every workout, every set, every rep. It all counts.</p></div><span className="status-pill">All-time progress</span></header>
-      {statsError && <p role="alert">{statsError}</p>}
-      <div className="stats-grid" aria-busy={!stats && !statsError}>{[{label:"Workouts completed",value:stats?.total_workouts,icon:"↗",note:"Sessions you showed up for"},{label:"Sets logged",value:stats?.total_sets,icon:"≡",note:"One step stronger, every set"},{label:"Total volume",value:stats?.total_volume,icon:"◈",unit:"lb",note:"The weight of your hard work"}].map(item => <section className="stat-card" key={item.label}><span className="stat-icon" aria-hidden="true">{item.icon}</span><p>{item.label}</p><h2>{item.value === undefined ? "—" : Number(item.value).toLocaleString()} <small>{item.unit}</small></h2><span className="muted">{item.note}</span></section>)}</div>
+      {trendError ? <div className="empty-state"><p role="alert">{trendError}</p><button className="secondary-button" onClick={() => { setTrendError(""); setTrendData(null); setReload(value => value + 1); }}>Try again</button></div> : trendData ? <VolumeTrend data={trendData} /> : <p className="empty-state" role="status">Loading volume trends…</p>}
       <section className="recent-workouts" aria-labelledby="recent-heading" aria-busy={loadingRecent}>
         <div className="section-heading"><h2 id="recent-heading">Recent workouts</h2><span className="muted">Your last five sessions</span></div>
         {loadingRecent ? <p className="empty-state" role="status">Loading recent workouts…</p> : recentError ?
-          <div className="empty-state"><p role="alert">{recentError}</p><button className="secondary-button" onClick={() => { setLoadingRecent(true); setRecentError(""); setStatsError(""); setReload(value => value + 1); }}>Try again</button></div> :
+          <div className="empty-state"><p role="alert">{recentError}</p><button className="secondary-button" onClick={() => { setLoadingRecent(true); setRecentError(""); setTrendError(""); setReload(value => value + 1); }}>Try again</button></div> :
           recentWorkouts.length === 0 ? <div className="empty-state"><h3>Your history starts with your next session.</h3><p>Finish a workout to see your exercises and sets here.</p></div> :
           <div className="recent-workout-list">{recentWorkouts.map((workout, index) => {
             const exercises = workout.exercises || [];

@@ -764,3 +764,44 @@ def get_recent_workouts(
         })
 
     return result
+
+
+@app.get("/stats/volume-trends")
+def get_volume_trends(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    rows = (
+        db.query(models.Workouts, models.Sets, models.Exercise, models.SplitDay, models.Split)
+        .join(models.Sets, models.Sets.workout_id == models.Workouts.id)
+        .join(models.Exercise, models.Exercise.id == models.Sets.exercise_id)
+        .join(models.SplitDay, models.SplitDay.id == models.Workouts.split_day_id)
+        .join(models.Split, models.Split.id == models.SplitDay.split_id)
+        .filter(models.Workouts.user_id == current_user.id, models.Split.user_id == current_user.id)
+        .order_by(models.Workouts.date.asc(), models.Workouts.id.asc())
+        .all()
+    )
+    days = {}
+    exercises = {}
+    sessions = {}
+    for workout, recorded_set, exercise, day, split in rows:
+        days[day.id] = {"id": day.id, "name": day.name, "split_name": split.name}
+        exercises[exercise.id] = {"id": exercise.id, "name": exercise.name, "day_id": day.id}
+        if workout.id not in sessions:
+            date = workout.date
+            if date.tzinfo is None:
+                date = date.replace(tzinfo=timezone.utc)
+            sessions[workout.id] = {
+                "id": workout.id, "date": date.isoformat(), "day_id": day.id,
+                "volume": 0, "exercise_volumes": {}, "exercise_sets": {}
+            }
+        session = sessions[workout.id]
+        volume = recorded_set.weight * recorded_set.reps
+        session["volume"] += volume
+        key = str(exercise.id)
+        session["exercise_volumes"][key] = session["exercise_volumes"].get(key, 0) + volume
+        session["exercise_sets"].setdefault(key, []).append({
+            "id": recorded_set.id, "set_number": recorded_set.set_number,
+            "weight": recorded_set.weight, "reps": recorded_set.reps
+        })
+    return {"days": list(days.values()), "exercises": list(exercises.values()), "sessions": list(sessions.values())}
