@@ -15,18 +15,32 @@ test('exercise trend excludes skipped sessions but preserves recorded zero volum
     assert.deepEqual(selectVolumePoints(sessions, '2', '99'), []);
 });
 
-test('estimated 1RM uses Epley, handles singles, and rejects invalid sets', async () => {
+test('estimated 1RM uses the updated formula, handles singles, and rejects invalid sets', async () => {
     const { estimateOneRepMax } = await import('../src/volumeTrends.js');
-    assert.equal(estimateOneRepMax(100, 6), 120);
+    assert.equal(estimateOneRepMax(100, 6), 100 * 36 / 31);
+    assert.equal(estimateOneRepMax(100, 37), null);
+    assert.equal(estimateOneRepMax(100, 40), null);
     assert.equal(estimateOneRepMax(150, 1), 150);
     assert.equal(estimateOneRepMax(0, 10), 0);
     assert.equal(estimateOneRepMax(100, 0), null);
     assert.equal(estimateOneRepMax(-5, 10), null);
 });
-test('exercise 1RM plots every recorded set in set order and skips other exercises', async () => {
+test('exercise 1RM plots only the highest set per workout and skips other exercises', async () => {
     const { selectExerciseMaxPoints } = await import('../src/volumeTrends.js');
     const history = [{ id: 1, day_id: 2, date: '2026-10-01', exercise_sets: {
         3: [{ id: 11, set_number: 2, weight: 150, reps: 1 }, { id: 10, set_number: 1, weight: 100, reps: 6 }]
     } }, { id: 2, day_id: 2, date: '2026-10-02', exercise_sets: { 4: [{ id: 12, set_number: 1, weight: 200, reps: 5 }] } }];
-    assert.deepEqual(selectExerciseMaxPoints(history, '2', '3').map(p => [p.id, p.volume, p.setNumber]), [['1:10', 120, 1], ['1:11', 150, 2]]);
+    assert.deepEqual(selectExerciseMaxPoints(history, '2', '3').map(p => [p.id, p.volume, p.setNumber]), [['1:11', 150, 2]]);
+});
+
+test('highest estimate wins even when it comes from a lighter set; ties use the first set', async () => {
+    const { selectExerciseMaxPoints } = await import('../src/volumeTrends.js');
+    const history = [{ id: 1, day_id: 2, date: '2026-10-01', exercise_sets: { 3: [
+        { id: 10, set_number: 1, weight: 100, reps: 12 },
+        { id: 11, set_number: 2, weight: 120, reps: 2 }
+    ] } }, { id: 2, day_id: 2, date: '2026-10-02', exercise_sets: { 3: [
+        { id: 12, set_number: 1, weight: 100, reps: 1 },
+        { id: 13, set_number: 2, weight: 100, reps: 1 }
+    ] } }];
+    assert.deepEqual(selectExerciseMaxPoints(history, '2', '3').map(p => p.id), ['1:10', '2:12']);
 });

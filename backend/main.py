@@ -786,7 +786,8 @@ def get_volume_trends(
     sessions = {}
     for workout, recorded_set, exercise, day, split in rows:
         days[day.id] = {"id": day.id, "name": day.name, "split_name": split.name}
-        exercises[exercise.id] = {"id": exercise.id, "name": exercise.name, "day_id": day.id}
+        if exercise.is_active:
+            exercises[exercise.id] = {"id": exercise.id, "name": exercise.name, "day_id": day.id}
         if workout.id not in sessions:
             date = workout.date
             if date.tzinfo is None:
