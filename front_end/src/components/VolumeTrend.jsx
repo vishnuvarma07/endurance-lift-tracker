@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { selectVolumePoints, selectExerciseMaxPoints } from "../volumeTrends";
 
 const formatDate = date => new Date(date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 
 export default function VolumeTrend({ data }) {
+    const chartRef = useRef(null);
+    const [chartWidth, setChartWidth] = useState(740);
     const [mode, setMode] = useState("day");
     const [selectedDay, setSelectedDay] = useState("");
     const [selectedExercise, setSelectedExercise] = useState("");
@@ -22,8 +24,25 @@ export default function VolumeTrend({ data }) {
     const times = points.map(point => new Date(point.date).getTime());
     const start = times[0] ?? 0;
     const range = (times.at(-1) ?? 0) - start;
-    const x = index => range ? 80 + (times[index] - start) / range * 600 : 380;
-    const y = value => 260 - value / max * 220;
+    const hasPoints = points.length > 0;
+    useEffect(() => {
+        const element = chartRef.current;
+        if (!element) return;
+        const observer = new ResizeObserver(entries => {
+            setChartWidth(Math.max(1, entries[0].contentRect.width));
+        });
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, [hasPoints]);
+    const compact = chartWidth < 500;
+    const left = compact ? 52 : 80;
+    const right = chartWidth - (compact ? 12 : 40);
+    const height = compact ? 280 : 320;
+    const bottom = height - 50;
+    const x = index => range ? left + (times[index] - start) / range * (right - left) : (left + right) / 2;
+    const y = value => bottom - value / max * (bottom - 40);
+    const axisValue = value => Math.round(value).toLocaleString(undefined, compact ? { notation: "compact", maximumFractionDigits: 1 } : {});
+    const axisDate = date => new Date(date).toLocaleDateString(undefined, { month: "short", day: "numeric", ...(compact ? {} : { year: "numeric" }) });
     const label = mode === "exercise" ? exercises.find(exercise => String(exercise.id) === exerciseId)?.name : data.days.find(day => String(day.id) === dayId)?.name;
 
     return <section className="volume-trend-panel" aria-labelledby="volume-heading">
@@ -36,12 +55,12 @@ export default function VolumeTrend({ data }) {
             </div>
             {points.length === 0 ? <p className="empty-state">No recorded sets for this selection.</p> : <>
                 <div className="trend-readout" aria-live="polite"><h3>{label}</h3><p><strong>{formatValue(active.volume)} lb</strong><span className="muted"> · {pointDescription(active)}</span></p></div>
-                <div className="volume-chart"><svg viewBox="0 0 740 320" role="img" aria-label={`${label} ${metric} across ${points.length} sessions, in pounds`}>
-                    {[0, 1, 2, 3, 4].map(tick => { const value = max * tick / 4; return <g key={tick}><line x1="80" x2="680" y1={y(value)} y2={y(value)} className="chart-grid"/><text x="68" y={y(value) + 4} textAnchor="end">{Math.round(value).toLocaleString()}</text></g>; })}
-                    <text x="80" y="22">{metric} (lb)</text>
+                <div className="volume-chart" ref={chartRef}><svg viewBox={`0 0 ${chartWidth} ${height}`} role="img" aria-label={`${label} ${metric} across ${points.length} sessions, in pounds`}>
+                    {[0, 1, 2, 3, 4].map(tick => { const value = max * tick / 4; return <g key={tick}><line x1={left} x2={right} y1={y(value)} y2={y(value)} className="chart-grid"/><text x={left - 10} y={y(value) + 4} textAnchor="end">{axisValue(value)}</text></g>; })}
+                    <text x={left} y="22">{metric} (lb)</text>
                     <polyline points={points.map((point, index) => `${x(index)},${y(point.volume)}`).join(" ")} className="chart-line"/>
                     {points.map((point, index) => <circle key={point.id} cx={x(index)} cy={y(point.volume)} r={point.id === active.id ? 7 : 5} className="chart-point"><title>{pointDescription(point)}: {formatValue(point.volume)} lb</title></circle>)}
-                    <text x="80" y="294">{formatDate(points[0].date)}</text><text x="680" y="294" textAnchor="end">{points.length > 1 ? formatDate(points.at(-1).date) : ""}</text>
+                    <text x={left} y={height - 18}>{axisDate(points[0].date)}</text><text x={right} y={height - 18} textAnchor="end">{points.length > 1 ? axisDate(points.at(-1).date) : ""}</text>
                 </svg></div>
                 <label className="trend-session-picker">Inspect a session<select value={active.id} onChange={event => setSelectedPoint(event.target.value)}>{points.map((point, index) => <option key={point.id} value={point.id}>Session {index + 1} · {pointDescription(point)} · {formatValue(point.volume)} lb</option>)}</select></label>
                 <p className="muted trend-note">{points.length === 1 ? "Log another session to see a trend. " : ""}{isExercise ? "Each point shows the highest set estimate from that session using weight × 36 / (37 − reps). Single-rep sets use the lifted weight. Skipped sets and sets with 37 or more reps are omitted." : "Only sessions with recorded sets are shown."}</p>

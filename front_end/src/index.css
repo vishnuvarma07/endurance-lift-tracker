@@ -779,8 +779,8 @@ h1, h3, .workout-history-exercises h4, .prev-set-txt {
 .trend-filters select:focus-visible, .trend-session-picker select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .trend-readout { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .trend-readout strong { color: var(--accent); }
-.volume-chart { width: 100%; overflow-x: auto; margin: 16px 0; }
-.volume-chart svg { width: 100%; min-width: 440px; display: block; }
+.volume-chart { width: 100%; min-width: 0; margin: 16px 0; }
+.volume-chart svg { width: 100%; height: auto; display: block; }
 .volume-chart text { fill: var(--text); font-size: 12px; }
 .chart-grid { stroke: var(--border); stroke-dasharray: 4 4; }
 .chart-line { fill: none; stroke: var(--accent); stroke-width: 3; }
@@ -792,3 +792,12 @@ h1, h3, .workout-history-exercises h4, .prev-set-txt {
 .trend-data ul { list-style: none; padding: 0; }
 .trend-data li { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); padding: 10px 0; }
 @media (max-width: 650px) { .volume-trend-panel { padding: 20px; } .trend-filters select, .trend-session-picker select { font-size: 16px; } }
+
+@media (max-width: 650px) {
+  .volume-trend-panel .section-heading { align-items: flex-start; }
+  .volume-trend-panel .section-heading h2 { overflow-wrap: anywhere; }
+  .trend-readout { align-items: flex-start; flex-direction: column; }
+  .trend-readout p, .trend-data li span { overflow-wrap: anywhere; min-width: 0; }
+  .trend-session-picker { width: 100%; min-width: 0; }
+  .trend-data li { flex-wrap: wrap; }
+}
