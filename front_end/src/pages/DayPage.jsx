@@ -1,3 +1,4 @@
+import ExerciseNotes from "../components/ExerciseNotes";
 import ExerciseSettings from "../components/ExerciseSettings";
 import { useParams } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
@@ -293,6 +294,7 @@ function DayPage() {
                                 </div>
                             );
                         })}
+                        <ExerciseNotes splitId={splitId} dayId={dayId} exercise={exercise} />
                         <div className="exercise-controls">
                             <button
                                 type="button"

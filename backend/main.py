@@ -806,3 +806,51 @@ def get_volume_trends(
             "weight": recorded_set.weight, "reps": recorded_set.reps
         })
     return {"days": list(days.values()), "exercises": list(exercises.values()), "sessions": list(sessions.values())}
+
+
+def get_owned_note_exercise(splitId, dayId, exerciseId, db, current_user):
+    exercise = (
+        db.query(models.Exercise)
+        .join(models.SplitDay, models.SplitDay.id == models.Exercise.split_day_id)
+        .join(models.Split, models.Split.id == models.SplitDay.split_id)
+        .filter(
+            models.Split.id == splitId,
+            models.Split.user_id == current_user.id,
+            models.SplitDay.id == dayId,
+            models.Exercise.id == exerciseId,
+            models.Exercise.is_active == True
+        ).first()
+    )
+    if not exercise:
+        raise HTTPException(status_code=404, detail="Exercise not found")
+    return exercise
+
+
+@app.get("/splits/{splitId}/days/{dayId}/exercises/{exerciseId}/notes")
+def get_exercise_note(
+    splitId: int, dayId: int, exerciseId: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    get_owned_note_exercise(splitId, dayId, exerciseId, db, current_user)
+    note = db.query(models.ExerciseNote).filter(models.ExerciseNote.exercise_id == exerciseId).first()
+    return {"content": note.content if note else ""}
+
+
+@app.put("/splits/{splitId}/days/{dayId}/exercises/{exerciseId}/notes")
+def save_exercise_note(
+    splitId: int, dayId: int, exerciseId: int,
+    update: schemas.ExerciseNoteUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    get_owned_note_exercise(splitId, dayId, exerciseId, db, current_user)
+    note = db.query(models.ExerciseNote).filter(models.ExerciseNote.exercise_id == exerciseId).first()
+    if note is None:
+        note = models.ExerciseNote(exercise_id=exerciseId, content=update.content)
+        db.add(note)
+    else:
+        note.content = update.content
+    db.commit()
+    db.refresh(note)
+    return {"content": note.content}

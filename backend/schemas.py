@@ -52,3 +52,7 @@ class ExerciseSettingsItem(BaseModel):
 
 class ExerciseSettingsUpdate(BaseModel):
     exercises: list[ExerciseSettingsItem]
+
+
+class ExerciseNoteUpdate(BaseModel):
+    content: str

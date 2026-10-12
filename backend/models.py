@@ -61,3 +61,10 @@ class Sets(Base):
     weight = Column(Float, nullable=False)
     reps = Column(Integer, nullable=False)
 
+
+
+class ExerciseNote(Base):
+    __tablename__ = "exercise_notes"
+
+    exercise_id = Column(Integer, ForeignKey("split_day_exercises.id"), primary_key=True)
+    content = Column(String, nullable=False, default="")
