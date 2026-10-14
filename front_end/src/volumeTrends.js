@@ -29,3 +29,25 @@ export function selectExerciseMaxPoints(sessions, dayId, exerciseId) {
             return best ? [best] : [];
         });
 }
+
+export function selectExerciseHistory(sessions, dayId, exerciseId, period = "all", now = new Date()) {
+    const cutoff = new Date(now);
+    if (period === "month") {
+        const day = cutoff.getDate();
+        cutoff.setDate(1);
+        cutoff.setMonth(cutoff.getMonth() - 1);
+        const lastDay = new Date(cutoff.getFullYear(), cutoff.getMonth() + 1, 0).getDate();
+        cutoff.setDate(Math.min(day, lastDay));
+    } else if (period === "year") {
+        const month = cutoff.getMonth();
+        cutoff.setFullYear(cutoff.getFullYear() - 1);
+        if (cutoff.getMonth() !== month) cutoff.setDate(0);
+    }
+    cutoff.setHours(0, 0, 0, 0);
+    return sessions.filter(session => String(session.day_id) === String(dayId) &&
+        (session.exercise_sets?.[String(exerciseId)]?.length ?? 0) > 0 &&
+        (period === "all" || new Date(session.date) >= cutoff))
+        .map(session => ({ ...session, sets: [...session.exercise_sets[String(exerciseId)]]
+            .sort((a, b) => a.set_number - b.set_number) }))
+        .sort((a, b) => new Date(b.date) - new Date(a.date) || b.id - a.id);
+}

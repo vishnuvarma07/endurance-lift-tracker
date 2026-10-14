@@ -1,23 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 
-import { selectVolumePoints, selectExerciseMaxPoints } from "../volumeTrends";
+import { selectExerciseHistory, estimateOneRepMax, selectExerciseMaxPoints } from "../volumeTrends";
 
 const formatDate = date => new Date(date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 
 export default function VolumeTrend({ data }) {
     const chartRef = useRef(null);
     const [chartWidth, setChartWidth] = useState(740);
-    const [mode, setMode] = useState("day");
+    const [period, setPeriod] = useState("all");
+    const [visibleWorkouts, setVisibleWorkouts] = useState(20);
     const [selectedDay, setSelectedDay] = useState("");
     const [selectedExercise, setSelectedExercise] = useState("");
     const dayId = data.days.some(day => String(day.id) === selectedDay) ? selectedDay : String(data.days[0]?.id ?? "");
     const exercises = data.exercises.filter(exercise => String(exercise.day_id) === dayId);
-    const exerciseId = mode === "exercise" ? (exercises.some(exercise => String(exercise.id) === selectedExercise) ? selectedExercise : String(exercises[0]?.id ?? "")) : "";
-    const isExercise = mode === "exercise";
-    const points = isExercise ? selectExerciseMaxPoints(data.sessions, dayId, exerciseId) : selectVolumePoints(data.sessions, dayId, "");
-    const metric = isExercise ? "Estimated 1RM" : "Volume";
+    const exerciseId = exercises.some(exercise => String(exercise.id) === selectedExercise) ? selectedExercise : String(exercises[0]?.id ?? "");
+    const history = selectExerciseHistory(data.sessions, dayId, exerciseId, period);
+    const points = selectExerciseMaxPoints([...history].reverse(), dayId, exerciseId);
+    const metric = "Estimated 1RM";
     const formatValue = value => value.toLocaleString(undefined, { maximumFractionDigits: 1 });
-    const pointDescription = point => `${formatDate(point.date)}${isExercise ? ` · Set ${point.setNumber} (${point.weight} lb × ${point.reps})` : ""}`;
+    const pointDescription = point => `${formatDate(point.date)} · Set ${point.setNumber} (${point.weight} lb × ${point.reps})`;
     const [selectedPoint, setSelectedPoint] = useState(null);
     const active = points.find(point => String(point.id) === selectedPoint) ?? points.at(-1);
     const max = Math.max(1, ...points.map(point => point.volume)) * 1.1;
@@ -43,15 +44,15 @@ export default function VolumeTrend({ data }) {
     const y = value => bottom - value / max * (bottom - 40);
     const axisValue = value => Math.round(value).toLocaleString(undefined, compact ? { notation: "compact", maximumFractionDigits: 1 } : {});
     const axisDate = date => new Date(date).toLocaleDateString(undefined, { month: "short", day: "numeric", ...(compact ? {} : { year: "numeric" }) });
-    const label = mode === "exercise" ? exercises.find(exercise => String(exercise.id) === exerciseId)?.name : data.days.find(day => String(day.id) === dayId)?.name;
+    const label = exercises.find(exercise => String(exercise.id) === exerciseId)?.name;
 
     return <section className="volume-trend-panel" aria-labelledby="volume-heading">
-        <div className="section-heading"><h2 id="volume-heading">{isExercise ? "Estimated one-rep max progress" : "Volume progress"}</h2><span className="muted">{isExercise ? "Highest estimated 1RM per session" : "Weight × reps per session"}</span></div>
+        <div className="section-heading"><h2 id="volume-heading">Estimated one-rep max progress</h2><span className="muted">Highest estimated 1RM per session</span></div>
         {data.days.length === 0 ? <div className="empty-state"><h3>Your progress starts with a session.</h3><p>Log workout sets to see your progress.</p></div> : <>
             <div className="trend-filters">
-                <label>Trend<select value={mode} onChange={event => { setMode(event.target.value); setSelectedPoint(null); }}><option value="day">Split day volume</option><option value="exercise">Exercise estimated 1RM</option></select></label>
-                <label>Training day<select value={dayId} onChange={event => { setSelectedDay(event.target.value); setSelectedExercise(""); setSelectedPoint(null); }}>{data.days.map(day => <option value={day.id} key={day.id}>{day.split_name} · {day.name}</option>)}</select></label>
-                {mode === "exercise" && <label>Exercise<select value={exerciseId} disabled={exercises.length === 0} onChange={event => { setSelectedExercise(event.target.value); setSelectedPoint(null); }}>{exercises.length === 0 && <option value="">No active exercises with recorded sets</option>}{exercises.map(exercise => <option value={exercise.id} key={exercise.id}>{exercise.name}</option>)}</select></label>}
+                <label>Training day<select value={dayId} onChange={event => { setSelectedDay(event.target.value); setSelectedExercise(""); setSelectedPoint(null); setVisibleWorkouts(20); }}>{data.days.map(day => <option value={day.id} key={day.id}>{day.split_name} · {day.name}</option>)}</select></label>
+                <label>Exercise<select value={exerciseId} disabled={exercises.length === 0} onChange={event => { setSelectedExercise(event.target.value); setSelectedPoint(null); setVisibleWorkouts(20); }}>{exercises.length === 0 && <option value="">No active exercises with recorded sets</option>}{exercises.map(exercise => <option value={exercise.id} key={exercise.id}>{exercise.name}</option>)}</select></label>
+                <label>Time range<select value={period} onChange={event => { setPeriod(event.target.value); setVisibleWorkouts(20); setSelectedPoint(null); }}><option value="month">Past month</option><option value="year">Past year</option><option value="all">All time</option></select></label>
             </div>
             {points.length === 0 ? <p className="empty-state">No recorded sets for this selection.</p> : <>
                 <div className="trend-readout" aria-live="polite"><h3>{label}</h3><p><strong>{formatValue(active.volume)} lb</strong><span className="muted"> · {pointDescription(active)}</span></p></div>
@@ -63,9 +64,24 @@ export default function VolumeTrend({ data }) {
                     <text x={left} y={height - 18}>{axisDate(points[0].date)}</text><text x={right} y={height - 18} textAnchor="end">{points.length > 1 ? axisDate(points.at(-1).date) : ""}</text>
                 </svg></div>
                 <label className="trend-session-picker">Inspect a session<select value={active.id} onChange={event => setSelectedPoint(event.target.value)}>{points.map((point, index) => <option key={point.id} value={point.id}>Session {index + 1} · {pointDescription(point)} · {formatValue(point.volume)} lb</option>)}</select></label>
-                <p className="muted trend-note">{points.length === 1 ? "Log another session to see a trend. " : ""}{isExercise ? "Each point shows the highest set estimate from that session using weight × 36 / (37 − reps). Single-rep sets use the lifted weight. Skipped sets and sets with 37 or more reps are omitted." : "Only sessions with recorded sets are shown."}</p>
-                <details className="trend-data"><summary>View chart data</summary><ul>{points.map(point => <li key={point.id}><span>{pointDescription(point)}</span><strong>{formatValue(point.volume)} lb</strong></li>)}</ul></details>
+                <p className="muted trend-note">{points.length === 1 ? "Log another session to see a trend. " : ""}{"Each point shows the highest set estimate from that session using weight × 36 / (37 − reps). Single-rep sets use the lifted weight. Skipped sets and sets with 37 or more reps are omitted."}</p>
+
             </>}
+            <details className="exercise-set-history">
+                <summary>All sets for {label || "this exercise"} · {history.length} workouts</summary>
+                {history.length === 0 ? <p className="muted">No sets recorded in this time range.</p> : <>
+                    <p className="muted">Showing {Math.min(visibleWorkouts, history.length)} of {history.length} workouts · newest first</p>
+                    <div className="set-history-workouts">{history.slice(0, visibleWorkouts).map(workout => <section className="set-history-workout" key={workout.id}>
+                        <h3><time dateTime={workout.date}>{new Date(workout.date).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}</time></h3>
+                        <div className="set-history-row set-history-labels" aria-hidden="true"><span>Set</span><span>Weight × reps</span><span>Est. 1RM</span></div>
+                        <ul>{workout.sets.map(set => {
+                            const estimate = estimateOneRepMax(Number(set.weight), Number(set.reps));
+                            return <li className="set-history-row" key={set.id ?? set.set_number}><span>Set {set.set_number}</span><strong>{set.weight} lb × {set.reps}</strong><span aria-label="Estimated one rep max">{estimate === null ? "—" : `${formatValue(estimate)} lb`}</span></li>;
+                        })}</ul>
+                    </section>)}</div>
+                    {visibleWorkouts < history.length && <button type="button" className="secondary-button" onClick={() => setVisibleWorkouts(value => value + 20)}>Show more workouts</button>}
+                </>}
+            </details>
         </>}
     </section>;
 }

@@ -44,3 +44,25 @@ test('highest estimate wins even when it comes from a lighter set; ties use the 
     ] } }];
     assert.deepEqual(selectExerciseMaxPoints(history, '2', '3').map(p => p.id), ['1:10', '2:12']);
 });
+
+test('set history filters by exercise, day and rolling time range, newest first', async () => {
+    const { selectExerciseHistory } = await import('../src/volumeTrends.js');
+    const make = (id, date, day_id = 2, exercise = 3) => ({ id, date, day_id, exercise_sets: { [exercise]: [
+        { id: id * 10 + 2, set_number: 2, weight: 100, reps: 6 },
+        { id: id * 10 + 1, set_number: 1, weight: 110, reps: 5 }
+    ] } });
+    const history = [make(1, '2024-01-01T12:00:00Z'), make(2, '2026-08-01T12:00:00Z'),
+        make(3, '2026-10-01T12:00:00Z'), make(4, '2026-10-02T12:00:00Z', 9), make(5, '2026-10-03T12:00:00Z', 2, 8)];
+    const now = new Date('2026-10-14T12:00:00Z');
+    assert.deepEqual(selectExerciseHistory(history, '2', '3', 'month', now).map(w => w.id), [3]);
+    assert.deepEqual(selectExerciseHistory(history, '2', '3', 'year', now).map(w => w.id), [3, 2]);
+    const all = selectExerciseHistory(history, '2', '3', 'all', now);
+    assert.deepEqual(all.map(w => w.id), [3, 2, 1]);
+    assert.deepEqual(all[0].sets.map(s => s.set_number), [1, 2]);
+    assert.deepEqual(history[0].exercise_sets[3].map(s => s.set_number), [2, 1]);
+});
+test('past month clamps the cutoff at the previous month end', async () => {
+    const { selectExerciseHistory } = await import('../src/volumeTrends.js');
+    const history = [{ id: 1, day_id: 2, date: '2026-02-28T12:00:00Z', exercise_sets: { 3: [{ set_number: 1 }] } }];
+    assert.equal(selectExerciseHistory(history, 2, 3, 'month', new Date('2026-03-31T12:00:00Z')).length, 1);
+});
