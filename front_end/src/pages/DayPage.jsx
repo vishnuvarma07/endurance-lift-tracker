@@ -1,3 +1,5 @@
+import useWorkoutDraft from "../useWorkoutDraft";
+import { workoutDraftKey } from "../workoutDraft";
 import ExerciseNotes from "../components/ExerciseNotes";
 import ExerciseSettings from "../components/ExerciseSettings";
 import { useParams } from "react-router-dom";
@@ -8,14 +10,21 @@ import "./DayPage.css"
 const API_URL = import.meta.env.VITE_API_URL;
 function DayPage() {
     const { splitId, dayId } = useParams();
+    const draftKey = workoutDraftKey(localStorage.getItem("token") || "", splitId, dayId);
+    return <WorkoutDay key={`${draftKey}:${splitId}:${dayId}`} splitId={splitId} dayId={dayId} draftKey={draftKey} />;
+}
+
+function WorkoutDay({ splitId, dayId, draftKey }) {
+    const { draft, updateDraft, storageError } = useWorkoutDraft(draftKey);
+    const { setData, setCounts, newExerciseName, targetSets } = draft;
+    const setSetData = value => updateDraft("setData", value);
+    const setSetCounts = value => updateDraft("setCounts", value);
+    const setNewExerciseName = value => updateDraft("newExerciseName", value);
+    const setTargetSets = value => updateDraft("targetSets", value);
     const [exercises, setExercises] = useState([]);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [day, setDay] = useState(null);
-    const [newExerciseName, setNewExerciseName] = useState("");
-    const [targetSets, setTargetSets] = useState("");
-    const [setData, setSetData] = useState({});
     const [previousSets, setPreviousSets] = useState([]);
-    const [setCounts, setSetCounts] = useState({});
     const [isFinishing, setIsFinishing] = useState(false);
     const [isAddingExercise, setIsAddingExercise] = useState(false);
     const finishingRef = useRef(false);
@@ -45,11 +54,6 @@ function DayPage() {
                     behavior: "auto"
                 });
             }, 0);
-            const initialSetCounts = {};
-            exerciseData.exercises.forEach((exercise) => {
-                initialSetCounts[exercise.id] = exercise.target_sets;
-            });
-            setSetCounts(initialSetCounts);
             const previousResponse = await fetch(
                 `${API_URL}/splits/${splitId}/days/${dayId}/previous-workout`,
                 {
@@ -200,8 +204,9 @@ function DayPage() {
                 savedSets.forEach(set => updated.set(`${set.exercise_id}:${set.set_number}`, set));
                 return [...updated.values()];
             });
-            alert("Workout saved!");
             setSetData({});
+            setSetCounts({});
+            alert("Workout saved!");
         } catch (error) {
             console.error(error);
             alert("Could not finish saving the workout. Please try again.");
@@ -232,6 +237,7 @@ function DayPage() {
                     {isFinishing ? "Saving..." : "Finish Workout"}
                 </button>
             </div></div>
+            {storageError && <p role="alert" className="card-rename-error">{storageError}</p>}
             <div className="exercise-scroll-container" ref={scrollContainerRef}>
                 {exercises.map((exercise) => (
                     <div className="exercise-card"key={exercise.id}>
